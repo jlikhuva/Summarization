@@ -69,7 +69,7 @@ class GlobalAttention(nn.Module):
     """
 
     def __init__(self, dim, coverage=False, attn_type="dot",
-                 attn_func="softmax"):
+                 attn_func="softmax", intra_attention=False):
         super(GlobalAttention, self).__init__()
 
         self.dim = dim
@@ -77,6 +77,7 @@ class GlobalAttention(nn.Module):
             "Please select a valid attention type (got {:s}).".format(
                 attn_type))
         self.attn_type = attn_type
+        self.intra_attention = intra_attention
         assert attn_func in ["softmax", "sparsemax"], (
             "Please select a valid attention function.")
         self.attn_func = attn_func
@@ -87,9 +88,13 @@ class GlobalAttention(nn.Module):
             self.linear_context = nn.Linear(dim, dim, bias=False)
             self.linear_query = nn.Linear(dim, dim, bias=True)
             self.v = nn.Linear(dim, 1, bias=False)
+
         # mlp wants it with bias
         out_bias = self.attn_type == "mlp"
         self.linear_out = nn.Linear(dim * 2, dim, bias=out_bias)
+        if self.intra_attention:
+            self.linear_out_intra = nn.Linear(dim * 3, dim, bias=out_bias)
+            self.linear_in_intra = nn.Linear(dim, dim, bias=False)
 
         if coverage:
             self.linear_cover = nn.Linear(1, dim, bias=False)
@@ -108,6 +113,7 @@ class GlobalAttention(nn.Module):
         # Check input sizes
         src_batch, src_len, src_dim = h_s.size()
         tgt_batch, tgt_len, tgt_dim = h_t.size()
+        # print(h_s.size(), h_t.size())
         aeq(src_batch, tgt_batch)
         aeq(src_dim, tgt_dim)
         aeq(self.dim, src_dim)
@@ -135,7 +141,7 @@ class GlobalAttention(nn.Module):
 
             return self.v(wquh.view(-1, dim)).view(tgt_batch, tgt_len, src_len)
 
-    def forward(self, source, memory_bank, memory_lengths=None, coverage=None):
+    def forward(self, source, memory_bank, memory_lengths=None, coverage=None, memory_bank_d=None):
         """
 
         Args:
@@ -194,8 +200,17 @@ class GlobalAttention(nn.Module):
         c = torch.bmm(align_vectors, memory_bank)
 
         # concatenate
-        concat_c = torch.cat([c, source], 2).view(batch*target_l, dim*2)
-        attn_h = self.linear_out(concat_c).view(batch, target_l, dim)
+        if self.intra_attention: # Intra-Decoder Attention.
+            '''TODO'''
+            memory_bank_d = memory_bank_d.permute(1, 0, 2)
+            align_d = self.score(source, memory_bank_d)
+            align_vectors_d = F.softmax(align_d.view(batch*target_l, source_l), -1)
+            c_d = torch.bmm(align_vectors_d, memory_bank_d)
+            concat_c = torch.cat([c, source, c_d], 2).view(batch*target_l, dim*3)
+            attn_h = self.linear_out_intra(concat_c).view(batch, target_l, dim)
+        else:
+            concat_c = torch.cat([c, source], 2).view(batch*target_l, dim*2)
+            attn_h = self.linear_out(concat_c).view(batch, target_l, dim)
         if self.attn_type in ["general", "dot"]:
             attn_h = torch.tanh(attn_h)
 

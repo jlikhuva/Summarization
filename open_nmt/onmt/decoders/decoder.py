@@ -121,7 +121,8 @@ class RNNDecoderBase(DecoderBase):
         else:
             self.attn = GlobalAttention(
                 hidden_size, coverage=coverage_attn,
-                attn_type=attn_type, attn_func=attn_func
+                attn_type=attn_type, attn_func=attn_func,
+                intra_attention=False
             )
 
         if copy_attn and not reuse_copy_attn:
@@ -378,6 +379,8 @@ class InputFeedRNNDecoder(RNNDecoderBase):
 
         # Input feed concatenates hidden state with
         # input at every time step.
+        # _, b, h = memory_bank.shape
+        # memory_bank_d = [torch.zeros(b, h)]
         for emb_t in emb.split(1):
             decoder_input = torch.cat([emb_t.squeeze(0), input_feed], 1)
             rnn_output, dec_state = self.rnn(decoder_input, dec_state)
@@ -385,7 +388,8 @@ class InputFeedRNNDecoder(RNNDecoderBase):
                 decoder_output, p_attn = self.attn(
                     rnn_output,
                     memory_bank.transpose(0, 1),
-                    memory_lengths=memory_lengths)
+                    memory_lengths=memory_lengths,)
+                    # memory_bank_d=torch.stack(memory_bank_d))
                 attns["std"].append(p_attn)
             else:
                 decoder_output = rnn_output
@@ -411,6 +415,9 @@ class InputFeedRNNDecoder(RNNDecoderBase):
                 attns["copy"] += [copy_attn]
             elif self._reuse_copy_attn:
                 attns["copy"] = attns["std"]
+
+            # h, _ = dec_state
+            # memory_bank_d.append(h[-1, :, :])
 
         return dec_state, dec_outs, attns
 

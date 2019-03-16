@@ -1,3 +1,6 @@
 [submodule "OpenNMT"]
 	path = OpenNMT
 	url = https://github.com/OpenNMT/OpenNMT-py.git
+[submodule "google-research"]
+	path = google-research
+	url = git@github.com:google-research/google-research.git

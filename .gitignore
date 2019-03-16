@@ -1,3 +1,5 @@
 *.pt
 *.txt
-
+.DS_Store
+*.zip
+*.csv

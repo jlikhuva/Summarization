@@ -68,4 +68,34 @@ class StyleTransfer(nn.Module):
             prev_content_output = new_content_output
             
         return prev_content_output
-            
+    
+
+class TwoDimensionalAttention(nn.Module):
+    def __init__(self, hidden_size, nchannels, height, width):
+        super(TwoDimensionalAttention, self).__init__()
+        self.attention_weights_linear = nn.Linear(hidden_size+nchannels, height * width)
+        self.attention_projection_linear = nn.Linear(hidden_size+nchannels, hidden_size)
+        
+        self.image_shape = (nchannels, height, width)
+    
+    def forward(self, image, hidden_state):
+        assert(image.shape[1:] == self.image_shape)
+        
+        permuted_image = image.permute((0, 2, 3, 1))
+        
+        expanded_hidden = hidden_state.view(hidden_state.shape[0], 1, 1, hidden_state.shape[1])
+        expanded_hidden = expanded_hidden.expand(-1, image.shape[-2], image.shape[-1], -1)
+        
+        concatenated_image = torch.cat([permuted_image, expanded_hidden], dim=-1)
+        
+        attention_weights = self.attention_weights_linear(concatenated_image)
+        attention_weights /= torch.sum(attention_weights, dim=[-3, -2])
+        
+        attention_vectors = torch.sum(torch.mul(attention_weights, permuted_image), dim=[-3, -2])
+        
+        hidden_attention_concat = torch.cat([hidden_state, attention_vectors], dim=-1)
+        
+        new_hidden_vectors = self.attention_projection_linear(hidden_attention_concat)
+        
+        return new_hidden_vectors
+        

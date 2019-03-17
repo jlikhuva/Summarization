@@ -48,13 +48,15 @@ def read_corpus(file_path, source):
         is of the source language or target language
     """
     data = []
+    l = 0
     for line in open(file_path):
         sent = line.strip().split(' ')
         # only append <s> and </s> to the target sentence
         if source == 'tgt':
             sent = ['<s>'] + sent + ['</s>']
         data.append(sent)
-
+        if l == 100000: break
+        l+=1
     return data
 
 
@@ -77,5 +79,34 @@ def batch_iter(data, batch_size, shuffle=False):
         examples = sorted(examples, key=lambda e: len(e[0]), reverse=True)
         src_sents = [e[0] for e in examples]
         tgt_sents = [e[1] for e in examples]
+        ext_sents = [list(map(int, e[2])) for e in examples]
+        yield src_sents, tgt_sents, ext_sents
 
-        yield src_sents, tgt_sents
+def evaluate_ppl(model, dev_data, batch_size=32):
+    """ Evaluate perplexity on dev sentences
+    @param model (NMT): NMT Model
+    @param dev_data (list of (src_sent, tgt_sent)): list of tuples containing source and target sentence
+    @param batch_size (batch size)
+    @returns ppl (perplixty on dev sentences)
+    """
+    was_training = model.training
+    model.eval()
+
+    cum_loss = 0.
+    cum_tgt_words = 0.
+
+    # no_grad() signals backend to throw away all gradients
+    with torch.no_grad():
+        for src_sents, tgt_sents in batch_iter(dev_data, batch_size):
+            loss = -model(src_sents, tgt_sents).sum()
+
+            cum_loss += loss.item()
+            tgt_word_num_to_predict = sum(len(s[1:]) for s in tgt_sents)  # omitting leading `<s>`
+            cum_tgt_words += tgt_word_num_to_predict
+
+        ppl = np.exp(cum_loss / cum_tgt_words)
+
+    if was_training:
+        model.train()
+
+    return ppl

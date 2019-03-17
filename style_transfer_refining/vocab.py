@@ -50,14 +50,14 @@ class VocabEntry(object):
         """ Retrieve word's index. Return the index for the unk
         token if the word is out of vocabulary.
         @param word (str): word to look up.
-        @returns index (int): index of word 
+        @returns index (int): index of word
         """
         return self.word2id.get(word, self.unk_id)
 
     def __contains__(self, word):
         """ Check if word is captured by VocabEntry.
         @param word (str): word to look up
-        @returns contains (bool): whether word is contained    
+        @returns contains (bool): whether word is contained
         """
         return word in self.word2id
 
@@ -116,7 +116,7 @@ class VocabEntry(object):
         return [self.id2word[w_id] for w_id in word_ids]
 
     def to_input_tensor(self, sents: List[List[str]], device: torch.device) -> torch.Tensor:
-        """ Convert list of sentences (words) into tensor with necessary padding for 
+        """ Convert list of sentences (words) into tensor with necessary padding for
         shorter sentences.
 
         @param sents (List[List[str]]): list of sentences (words)
@@ -167,7 +167,7 @@ class Vocab(object):
         @param vocab_size (int): Size of vocabulary for both source and target languages
         @param freq_cutoff (int): if word occurs n < freq_cutoff times, drop the word.
         """
-        assert len(src_sents) == len(tgt_sents)
+        # assert len(src_sents) == len(tgt_sents)
 
         print('initialize source vocabulary ..')
         src = VocabEntry.from_corpus(src_sents, vocab_size, freq_cutoff)

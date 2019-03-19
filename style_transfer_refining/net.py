@@ -2,19 +2,27 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+<<<<<<< HEAD
 import operator
 from functools import reduce
 
+=======
+'''
+Calculates the mean and standard deviation over multiple dimensions
+@param t - tensor to calculate statistics
+@param dim - list of dimensions over which to calculate the statistics
+'''
+>>>>>>> d061c971de140e2e29e5716435e817b29660f793
 def tensor_mean_std(t, dim, *args, **kwargs):
     num_elements = reduce(operator.mul, (t.shape[d] for d in dim), 1)
     t_mean = torch.mean(t, dim=dim, *args, **kwargs)
-    return t_mean, torch.sum((t - t_mean) ** 2, dim=dim, *args, **kwargs) / num_elements
+    return t_mean, torch.sqrt(torch.sum((t - t_mean) ** 2, dim=dim, *args, **kwargs) / (num_elements - 0.999))
 
 class StyleTransfer(nn.Module):
     '''
     Constructor
-    Parameters:
     @param conv_layers - list of tuples (filter_size, stride, num_filters, adain) or ('MaxPool', stride, size, adain)
+    @param batch_norm - whether to add batch normalization
     '''
     def __init__(self, vocab_size, embed_size=100, hidden_dim=512, conv_layers=None, batch_norm=False):
         super(StyleTransfer, self).__init__()
@@ -85,7 +93,11 @@ class TwoDimensionalAttention(nn.Module):
         self.attention_projection_linear = nn.Linear(hidden_size+nchannels, hidden_size)
 
         self.image_shape = (nchannels, height, width)
-
+    '''
+    Forward propagation for two-dimensional attention
+    @param image - convolutional block of shape (batch_size, num_channels, height, width) over which to compute attention
+    @param hidden_state - tensor of shape (batch_size, hidden_size) that gives the hidden state vector for a particular timestep
+    '''
     def forward(self, image, hidden_state):
         assert(image.shape[1:] == self.image_shape)
 

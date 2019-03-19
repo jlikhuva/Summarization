@@ -80,6 +80,7 @@ def batch_iter(data, batch_size, shuffle=False):
         src_sents = [e[0] for e in examples]
         tgt_sents = [e[1] for e in examples]
         ext_sents = [list(map(int, e[2])) for e in examples]
+        print(src_sents[0], tgt_sents[0], ext_sents[0])
         yield src_sents, tgt_sents, ext_sents
 
 def evaluate_ppl(model, dev_data, batch_size=32):

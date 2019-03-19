@@ -27,7 +27,7 @@ args = {
 }
 
 def forward(source_document, extractive_summary,
-			target, encoder, decoder, vocab, device=torch.device('cpu')):
+        target, encoder, decoder, vocab, device=torch.device('cpu')):
     """
 
     @param source_document (List[List[str]]): List of the source document that needs to be summarized.
@@ -47,9 +47,9 @@ def forward(source_document, extractive_summary,
 	    	if v == 0:
         		extractive_padded[j][i] = 0
     # print(extractive_padded[:, 0], source_padded[:, 0])
-	latent_state = encoder(content=extractive_padded, style=source_padded)
-	out = decoder(latent_state, latent_state, target_padded)
-	return out
+    latent_state = encoder(content=extractive_padded, style=source_padded)
+    out = decoder(latent_state, latent_state, target_padded)
+    return out
 
 def train(args):
     """
@@ -73,7 +73,7 @@ def train(args):
     log_every = int(args['--log-every'])
     vocab = Vocab.load(args['--vocab'])
 
-    encoder = StyleTransfer()
+    encoder = StyleTransfer(vocab_size=len(vocab.tgt))
     decoder = STDecoder(vocab_size=len(vocab.tgt))
     encoder.train(); decoder.train()
 

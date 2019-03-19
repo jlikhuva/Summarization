@@ -2,17 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-<<<<<<< HEAD
 import operator
 from functools import reduce
 
-=======
 '''
 Calculates the mean and standard deviation over multiple dimensions
 @param t - tensor to calculate statistics
 @param dim - list of dimensions over which to calculate the statistics
 '''
->>>>>>> d061c971de140e2e29e5716435e817b29660f793
 def tensor_mean_std(t, dim, *args, **kwargs):
     num_elements = reduce(operator.mul, (t.shape[d] for d in dim), 1)
     t_mean = torch.mean(t, dim=dim, *args, **kwargs)
